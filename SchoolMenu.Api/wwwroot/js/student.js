@@ -1,97 +1,138 @@
 // ============================================================
 //  student.js - логиката на ученическата страница (index.html)
-//
-//  ТОВА Е ПРИМЕРЪТ "как се ПОКАЗВАТ данни от базата":
-//    сървър -> api.js (fetch) -> JSON обект -> HTML в страницата
 // ============================================================
 
-// Помощна функция: Date обект -> текст "2026-07-07" (за API-то).
-// Внимание: месеците в JavaScript почват от 0 (януари = 0)!
 function dateToStr(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
 }
 
-// Коя дата гледаме в момента.
-// В ЗАДАЧА 2 ще я променяш с бутоните "Вчера/Днес/Утре".
-let currentDate = new Date();
+// Връща датата, преместена с N работни дни (пропуска събота и неделя)
+function addWorkdays(date, days) {
+    const result = new Date(date);
+    const step = days > 0 ? 1 : -1;
+    let remaining = Math.abs(days);
+    while (remaining > 0) {
+        result.setDate(result.getDate() + step);
+        const dow = result.getDay(); // 0=неделя, 6=събота
+        if (dow !== 0 && dow !== 6) remaining--;
+    }
+    return result;
+}
 
-// Зарежда менюто за дадена дата и го "рисува" в страницата
+// Ако днес е събота или неделя, отиди на най-близкия работен ден
+function nearestWorkday(date) {
+    const d = new Date(date);
+    const dow = d.getDay();
+    if (dow === 6) d.setDate(d.getDate() + 2); // събота -> понеделник
+    if (dow === 0) d.setDate(d.getDate() + 1); // неделя -> понеделник
+    return d;
+}
+
+let currentDate = nearestWorkday(new Date());
+
+// Връща масив от активните алергени (lowercase, trimmed)
+function getActiveAllergens() {
+    const checkboxes = document.querySelectorAll(".allergen-checkbox:checked");
+    return Array.from(checkboxes).map(cb => cb.value.toLowerCase().trim());
+}
+
+// Проверява дали низ от алергени ("мляко, яйца") съдържа някой от избраните
+function hasBlockedAllergen(allergensStr, blocked) {
+    if (!allergensStr || blocked.length === 0) return false;
+    const itemAllergens = allergensStr.toLowerCase().split(",").map(a => a.trim());
+    return blocked.some(b => itemAllergens.some(a => a.includes(b) || b.includes(a)));
+}
+
 async function loadMenu(date) {
-  const container = document.getElementById("menu-container");
+    const container = document.getElementById("menu-container");
 
-  // Показваме датата на български, напр. "понеделник, 6 юли"
-  document.getElementById("menu-date").textContent =
-    date.toLocaleDateString("bg-BG", { weekday: "long", day: "numeric", month: "long" });
+    const dateLocale = getLang() === "en" ? "en-GB" : "bg-BG";
+    document.getElementById("menu-date").textContent =
+        date.toLocaleDateString(dateLocale, { weekday: "long", day: "numeric", month: "long" });
 
-  // Питаме сървъра (функцията е в api.js)
-  const menu = await getMenuForDate(dateToStr(date));
+    const menu = await getMenuForDate(dateToStr(date));
 
-  // Кухнята още не е публикувала меню за тази дата:
-  if (!menu) {
-    container.innerHTML =
-      `<div class="alert">Менюто за този ден все още не е публикувано. Провери по-късно!</div>`;
-    return;
-  }
+    if (!menu) {
+        container.innerHTML = `<div class="alert">${translate("no_menu")}</div>`;
+        return;
+    }
 
-  // Менюто идва като JS обект, напр. menu.soup.name = "Таратор".
-  // "?."  = ако soup е null, не гърми, а дава undefined
-  // "??"  = ако отляво е null/undefined, покажи това отдясно
-  container.innerHTML = `
+    renderMenu(menu);
+}
+
+function renderMenu(menu) {
+    const container = document.getElementById("menu-container");
+    const blocked = getActiveAllergens();
+
+    const soupHidden = hasBlockedAllergen(menu.soup?.allergens, blocked);
+    const mainHidden = hasBlockedAllergen(menu.mainCourse?.allergens, blocked);
+    const dessertHidden = hasBlockedAllergen(menu.dessert?.allergens, blocked);
+
+    // Съхраняваме менюто за повторно рендиране при смяна на филтъра
+    container.dataset.menuJson = JSON.stringify(menu);
+
+    const allHidden = soupHidden && mainHidden && dessertHidden;
+
+    const makeItem = (emoji, labelKey, item, hidden) => {
+        if (hidden) return `
+      <div class="menu-item menu-item--hidden">
+        <span class="emoji">🚫</span>
+        <div>
+          <small>${translate(labelKey)}</small>
+          <strong class="allergen-warning">${item?.name ?? translate("none")} — ${translate("allergens")}: ${item?.allergens}</strong>
+        </div>
+      </div>`;
+
+        return `
+      <div class="menu-item">
+        <span class="emoji">${emoji}</span>
+        <div>
+          <small>${translate(labelKey)}</small>
+          <strong>${item?.name ?? translate("none")}</strong>
+          ${item?.allergens ? `<em>${translate("allergens")}: ${item.allergens}</em>` : ""}
+        </div>
+      </div>`;
+    };
+
+    container.innerHTML = `
     <div class="menu-card">
-      <div class="menu-item">
-        <span class="emoji">🍲</span>
-        <div>
-          <small>Супа</small>
-          <strong>${menu.soup?.name ?? "Няма"}</strong>
-          ${menu.soup?.allergens ? `<em>алергени: ${menu.soup.allergens}</em>` : ""}
-        </div>
-      </div>
-      <div class="menu-item">
-        <span class="emoji">🍛</span>
-        <div>
-          <small>Основно</small>
-          <strong>${menu.mainCourse?.name ?? "Няма"}</strong>
-          ${menu.mainCourse?.allergens ? `<em>алергени: ${menu.mainCourse.allergens}</em>` : ""}
-        </div>
-      </div>
-      <div class="menu-item">
-        <span class="emoji">🍰</span>
-        <div>
-          <small>Десерт</small>
-          <strong>${menu.dessert?.name ?? "Няма"}</strong>
-          ${menu.dessert?.allergens ? `<em>алергени: ${menu.dessert.allergens}</em>` : ""}
-        </div>
-      </div>
+      ${makeItem("🍲", "label_soup", menu.soup, soupHidden)}
+      ${makeItem("🍛", "label_main", menu.mainCourse, mainHidden)}
+      ${makeItem("🍰", "label_dessert", menu.dessert, dessertHidden)}
+      ${allHidden ? `<p class="allergen-all-warning">⚠️ ${translate("allergen_all_hidden")}</p>` : ""}
       ${menu.notes ? `<p class="notes">ℹ️ ${menu.notes}</p>` : ""}
     </div>`;
 }
 
-// При отваряне на страницата -> покажи менюто за ДНЕС
+// При смяна на чекбокс -> просто рендираме пак от кешираното меню
+function onAllergenChange() {
+    const container = document.getElementById("menu-container");
+    const json = container.dataset.menuJson;
+    if (json) {
+        renderMenu(JSON.parse(json));
+    }
+}
+
+document.addEventListener("langchange", () => loadMenu(currentDate));
 loadMenu(currentDate);
 
-// ═══════════════════════════════════════════════════════════
-//  ЗАДАЧА 2: Навигация "← Вчера | Днес | Утре →"
-//
-//  1. В index.html разкоментирай блока с трите бутона
-//  2. Тук напиши функция, която мести датата с N дни:
-//
-//       function changeDay(days) {
-//         currentDate.setDate(currentDate.getDate() + days);
-//         loadMenu(currentDate);
-//       }
-//
-//  3. Закачи бутоните за функцията:
-//
-//       document.getElementById("btn-prev").onclick  = () => changeDay(-1);
-//       document.getElementById("btn-next").onclick  = () => changeDay(+1);
-//       document.getElementById("btn-today").onclick = () => {
-//         currentDate = new Date();
-//         loadMenu(currentDate);
-//       };
-//
-//  Тествай: SeedData слага меню за днес И за утре,
-//  така че "Утре →" трябва да покаже друго меню!
-// ═══════════════════════════════════════════════════════════
+// --- Навигация ---
+function changeDay(days) {
+    currentDate = addWorkdays(currentDate, days);
+    loadMenu(currentDate);
+}
+
+document.getElementById("btn-prev").onclick = () => changeDay(-1);
+document.getElementById("btn-next").onclick = () => changeDay(+1);
+document.getElementById("btn-today").onclick = () => {
+    currentDate = nearestWorkday(new Date());
+    loadMenu(currentDate);
+};
+
+// --- Алергенен филтър ---
+document.querySelectorAll(".allergen-checkbox").forEach(cb => {
+    cb.addEventListener("change", onAllergenChange);
+});
