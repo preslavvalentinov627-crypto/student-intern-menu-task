@@ -1,40 +1,63 @@
 <!DOCTYPE html>
 <html lang="bg">
 <head>
-  <meta charset="UTF-8">
-  <!-- viewport = страницата да изглежда добре и на телефон -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Дневно меню</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <!-- viewport = страницата да изглежда добре и на телефон -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дневно меню</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- слагаме темата веднага, за да няма проблясване на грешната -->
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');</script>
 </head>
 <body>
 
-  <header>
-    <h1>🍽️ Дневно меню</h1>
-    <a href="login.html">Вход за кухнята</a>
-  </header>
+    <header>
+        <h1 data-i18n="app_title">🍽️ Дневно меню</h1>
+        <div class="header-right">
+            <div class="toggles">
+                <button id="btn-theme" class="toggle-btn" title="Тъмен / светъл режим">🌙</button>
+                <button id="btn-lang" class="toggle-btn" title="Език / Language">EN</button>
+            </div>
+            <a href="login.html" data-i18n="kitchen_login">Вход за кухнята</a>
+        </div>
+    </header>
 
-  <main>
-    <!-- Датата се попълва от student.js -->
-    <h2 id="menu-date"></h2>
+    <main>
+        <!-- Датата се попълва от student.js -->
+        <h2 id="menu-date"></h2>
 
-    <!-- ═══════════ ЗАДАЧА 2: Навигация между дните ═══════════
-         Разкоментирай трите бутона по-долу (изтрий този ред и
-         реда след бутоните) и виж стъпките в js/student.js.
+        <div class="day-nav">
+            <button id="btn-prev" data-i18n="nav_prev">← Вчера</button>
+            <button id="btn-today" data-i18n="nav_today">Днес</button>
+            <button id="btn-next" data-i18n="nav_next">Утре →</button>
+        </div>
 
-    <div class="day-nav">
-      <button id="btn-prev">← Вчера</button>
-      <button id="btn-today">Днес</button>
-      <button id="btn-next">Утре →</button>
-    </div>
-         ═══════════════════════════════════════════════════════ -->
+        <!-- ===== АЛЕРГЕНЕН ФИЛТЪР ===== -->
+        <details class="allergen-filter-panel">
+            <summary>
+                <span>⚠️ <span data-i18n="allergen_filter_title">Филтър по алергени</span></span>
+            </summary>
+            <p class="allergen-hint" data-i18n="allergen_filter_hint">
+                Отметни алергените, към които си чувствителен — ястията с тях ще изчезнат от менюто.
+            </p>
+            <div class="allergen-checkboxes">
+                <label><input type="checkbox" class="allergen-checkbox" value="мляко"> <span data-i18n="allergen_milk">Мляко</span></label>
+                <label><input type="checkbox" class="allergen-checkbox" value="яйца">  <span data-i18n="allergen_eggs">Яйца</span></label>
+                <label><input type="checkbox" class="allergen-checkbox" value="глутен"><span data-i18n="allergen_gluten">Глутен</span></label>
+                <label><input type="checkbox" class="allergen-checkbox" value="целина"><span data-i18n="allergen_celery">Целина</span></label>
+                <label><input type="checkbox" class="allergen-checkbox" value="ядки">  <span data-i18n="allergen_nuts">Ядки</span></label>
+                <label><input type="checkbox" class="allergen-checkbox" value="соя">   <span data-i18n="allergen_soy">Соя</span></label>
+                <label><input type="checkbox" class="allergen-checkbox" value="риба">  <span data-i18n="allergen_fish">Риба</span></label>
+            </div>
+        </details>
 
-    <!-- Тук student.js "рисува" менюто -->
-    <div id="menu-container">Зареждане...</div>
-  </main>
+        <!-- Тук student.js „рисува" менюто -->
+        <div id="menu-container" data-i18n="loading">Зареждане...</div>
+    </main>
 
-  <!-- Редът е важен: първо api.js (функциите), после student.js (ползва ги) -->
-  <script src="js/api.js"></script>
-  <script src="js/student.js"></script>
+    <!-- Редът е важен: първо api.js (функциите + език/тема), после student.js -->
+    <script src="js/api.js"></script>
+    <script src="js/student.js"></script>
 </body>
 </html>
