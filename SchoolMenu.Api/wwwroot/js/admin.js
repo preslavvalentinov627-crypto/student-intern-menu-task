@@ -1,96 +1,154 @@
 // ============================================================
 //  admin.js - страницата на кухнята (admin.html)
-//
-//  ТУК ИМА РАБОТЕЩ ПРИМЕР за ЦЕЛИЯ път на записа:
-//    HTML форма -> api.js postMenuItem() -> POST /api/menuitems
-//    -> MenuItemsController.Create() -> SaveChangesAsync() -> menu.db
-//
-//  ЗАДАЧА 1 (основната ти задача!) е най-долу: направи по
-//  СЪЩИЯ начин формата за дневно меню.
 // ============================================================
 
-// --- "Пазач" на страницата: само кухнята има достъп ---
+// --- "Пазач": само кухнята има достъп ---
 async function guard() {
-  const user = await getCurrentUser();   // от api.js
-  if (!user || user.role !== "kitchen") {
-    window.location.href = "login.html"; // не си влязъл -> към login
-    return null;
-  }
-  document.getElementById("who").textContent = user.username;
-  return user;
+    const user = await getCurrentUser();
+    if (!user || user.role !== "kitchen") {
+        window.location.href = "login.html";
+        return null;
+    }
+    document.getElementById("who").textContent = user.username;
+    return user;
 }
 
 // --- Зарежда и показва списъка с ястия ---
 async function loadItems() {
-  const items = await getMenuItems();    // от api.js
-  const typeName = { soup: "🍲 супа", main: "🍛 основно", dessert: "🍰 десерт" };
+    const items = await getMenuItems();
+    const typeName = {
+        soup: translate("type_soup"),
+        main: translate("type_main"),
+        dessert: translate("type_dessert"),
+    };
 
-  // За всяко ястие правим по един <li> и ги слепваме в общ текст
-  document.getElementById("items-list").innerHTML = items
-    .map(i => `<li>${i.name} <span class="tag">${typeName[i.type] ?? i.type}</span></li>`)
-    .join("");
+    document.getElementById("items-list").innerHTML = items
+        .map(i => `
+      <li>
+        <span>
+          ${i.name}
+          <span class="tag">${typeName[i.type] ?? i.type}</span>
+          ${i.allergens ? `<span class="allergen-tag">⚠️ ${i.allergens}</span>` : ""}
+        </span>
+        <button class="btn-delete-item"
+                data-id="${i.id}"
+                data-name="${i.name}"
+                title="${translate("confirm_delete_item")}">🗑️</button>
+      </li>`)
+        .join("");
+
+    document.querySelectorAll(".btn-delete-item").forEach(btn => {
+        btn.addEventListener("click", () =>
+            confirmDeleteItem(Number(btn.dataset.id), btn.dataset.name)
+        );
+    });
 }
 
-// --- РАБОТЕЩ ПРИМЕР: добавяне на ново ястие ---
+// --- Модален диалог за потвърждение при изтриване ---
+function confirmDeleteItem(id, name) {
+    const modal = document.getElementById("delete-modal");
+    const modalMsg = document.getElementById("delete-modal-msg");
+
+    modalMsg.textContent = `„${name}" — ${translate("confirm_delete_item")}`;
+    modal.classList.add("modal--visible");
+
+    document.getElementById("btn-confirm-delete").onclick = async () => {
+        modal.classList.remove("modal--visible");
+        try {
+            await deleteMenuItem(id);
+            await loadItems();
+            await loadMenuItemOptions();
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    document.getElementById("btn-cancel-delete").onclick = () => {
+        modal.classList.remove("modal--visible");
+    };
+}
+
+// --- Добавяне на ново ястие ---
 document.getElementById("item-form").addEventListener("submit", async (e) => {
-  e.preventDefault();   // спри презареждането на страницата (стандартно за форми + JS)
+    e.preventDefault();
+    try {
+        await postMenuItem({
+            name: document.getElementById("item-name").value,
+            type: document.getElementById("item-type").value,
+            allergens: document.getElementById("item-allergens").value || null,
+        });
+        document.getElementById("item-form").reset();
+        await loadItems();
+        await loadMenuItemOptions();
+    } catch (err) {
+        alert(err.message);
+    }
+});
 
-  try {
-    // Събираме стойностите от формата в обект и го пращаме към сървъра
-    await postMenuItem({
-      name: document.getElementById("item-name").value,
-      type: document.getElementById("item-type").value,
-      allergens: document.getElementById("item-allergens").value || null,
-    });
+// --- Напълва трите <select> с ястия от базата ---
+async function loadMenuItemOptions() {
+    const items = await getMenuItems();
+    const fill = (selectId, type) => {
+        const filtered = items.filter(i => i.type === type);
+        document.getElementById(selectId).innerHTML = filtered
+            .map(i => `<option value="${i.id}">${i.name}</option>`)
+            .join("");
+    };
+    fill("select-soup", "soup");
+    fill("select-main", "main");
+    fill("select-dessert", "dessert");
+}
 
-    document.getElementById("item-form").reset();  // изчисти формата
-    await loadItems();   // презареди списъка - новото ястие идва ОТ БАЗАТА!
-  } catch (err) {
-    alert(err.message);  // напр. "Името на ястието е задължително"
-  }
+// --- Публикуване / редакция на дневно меню ---
+document.getElementById("menu-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const dateStr = document.getElementById("menu-date-input").value;
+    const soupVal = document.getElementById("select-soup").value;
+    const mainVal = document.getElementById("select-main").value;
+    const dessertVal = document.getElementById("select-dessert").value;
+
+    if (!soupVal || !mainVal || !dessertVal) {
+        alert(translate("need_dishes_first"));
+        return;
+    }
+
+    const payload = {
+        date: dateStr,
+        soupId: Number(soupVal),
+        mainCourseId: Number(mainVal),
+        dessertId: Number(dessertVal),
+        notes: document.getElementById("menu-notes").value || null,
+    };
+
+    try {
+        const existing = await getMenuForDate(dateStr);
+        if (existing) {
+            await putMenu(existing.id, payload);
+            alert(translate("menu_updated"));
+        } else {
+            await postMenu(payload);
+            alert(translate("menu_published"));
+        }
+        document.getElementById("menu-form").reset();
+    } catch (err) {
+        alert(err.message);
+    }
 });
 
 // --- Изход ---
 document.getElementById("btn-logout").addEventListener("click", async () => {
-  await logout();
-  window.location.href = "index.html";
+    await logout();
+    window.location.href = "index.html";
 });
 
-// --- Старт на страницата ---
-guard().then(user => { if (user) loadItems(); });
+// --- Старт ---
+guard().then(user => {
+    if (user) {
+        loadItems();
+        loadMenuItemOptions();
+    }
+});
 
-// ═══════════════════════════════════════════════════════════
-//  ЗАДАЧА 1: Форма "Създай дневно меню"
-//
-//  Сървърът е ГОТОВ (POST /api/menu), api.js има postMenu().
-//  Остава само формата. План:
-//
-//  1. В admin.html (секцията "Дневно меню") направи форма с:
-//       - <input type="date" id="menu-date-input">
-//       - три <select> за супа / основно / десерт
-//         (id: select-soup, select-main, select-dessert)
-//       - <input id="menu-notes"> за бележки
-//       - бутон "Публикувай"
-//
-//  2. Напълни трите <select> с ястията от базата. Подсказка:
-//       const items = await getMenuItems();
-//       const soups = items.filter(i => i.type === "soup");
-//       document.getElementById("select-soup").innerHTML = soups
-//         .map(i => `<option value="${i.id}">${i.name}</option>`)
-//         .join("");
-//     (същото за main и dessert - или си направи обща функция!)
-//
-//  3. При submit на формата извикай postMenu(...):
-//       await postMenu({
-//         date: document.getElementById("menu-date-input").value,
-//         soupId: Number(document.getElementById("select-soup").value),
-//         mainCourseId: ...,
-//         dessertId: ...,
-//         notes: document.getElementById("menu-notes").value || null,
-//       });
-//     ВНИМАНИЕ: value на <select> е ТЕКСТ ("3"), а сървърът иска
-//     число - затова Number(...)!
-//
-//  4. Провери резултата: отвори index.html и избери същата дата.
-//     Ако менюто се вижда - ГОТОВО, целият кръг работи! 🎉
-// ═══════════════════════════════════════════════════════════
+// При смяна на език обновяваме типовете ястия в списъка
+document.addEventListener("langchange", () => loadItems());
