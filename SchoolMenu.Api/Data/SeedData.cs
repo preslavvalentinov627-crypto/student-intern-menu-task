@@ -61,8 +61,7 @@ public static class SeedData
             Date = DateTime.Today,
             Soup = tarator,
             MainCourse = pileSOriz,
-            Dessert = yabalkovShtrudel,
-            Notes = "Добре дошли! Това меню е добавено автоматично от Data/SeedData.cs"
+            Dessert = yabalkovShtrudel
         });
         db.DailyMenus.Add(new DailyMenu
         {
