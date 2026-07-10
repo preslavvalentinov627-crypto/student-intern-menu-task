@@ -1,50 +1,57 @@
 <!DOCTYPE html>
 <html lang="bg">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Вход | Дневно меню</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход | Дневно меню</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="css/style.css">
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');</script>
 </head>
 <body>
 
-  <main class="login-box">
-    <h1>🔐 Вход</h1>
+    <main class="login-box">
+        <div class="toggles">
+            <button id="btn-theme" class="toggle-btn" title="Тъмен / светъл режим">🌙</button>
+            <button id="btn-lang" class="toggle-btn" title="Език / Language">EN</button>
+        </div>
 
-    <!-- Подсказка за тестване - махни я преди реално ползване! -->
-    <p class="hint">Тестови акаунти: kitchen / kitchen123 &middot; student / student123</p>
+        <h1 data-i18n="login_title">🔐 Вход</h1>
 
-    <form id="login-form">
-      <input id="username" placeholder="Потребителско име" required>
-      <input id="password" type="password" placeholder="Парола" required>
-      <button type="submit">Влез</button>
-      <!-- Тук се показва съобщение при грешен вход -->
-      <div id="error" class="error"></div>
-    </form>
+        <!-- Подсказка за тестване - махни я преди реално ползване! -->
+        <p class="hint" data-i18n="login_hint">Тестови акаунти: kitchen / kitchen123 &middot; student / student123</p>
 
-    <a href="index.html">← Обратно към менюто</a>
-  </main>
+        <form id="login-form">
+            <input id="username" data-i18n-placeholder="ph_username" placeholder="Потребителско име" required>
+            <input id="password" type="password" data-i18n-placeholder="ph_password" placeholder="Парола" required>
+            <button type="submit" data-i18n="btn_login">Влез</button>
+            <!-- Тук се показва съобщение при грешен вход -->
+            <div id="error" class="error"></div>
+        </form>
 
-  <script src="js/api.js"></script>
-  <script>
-    // Логиката на входа е кратка, затова е директно тук.
-    document.getElementById("login-form").addEventListener("submit", async (e) => {
-      e.preventDefault();   // спри презареждането на страницата
+        <a href="index.html" data-i18n="back_to_menu">← Обратно към менюто</a>
+    </main>
 
-      try {
-        const user = await login(              // функцията е в api.js
-          document.getElementById("username").value,
-          document.getElementById("password").value
-        );
+    <script src="js/api.js"></script>
+    <script>
+        // Логиката на входа е кратка, затова е директно тук.
+        document.getElementById("login-form").addEventListener("submit", async (e) => {
+            e.preventDefault();   // спри презареждането на страницата
 
-        // Пренасочваме според ролята:
-        // кухнята -> админ панела, всички останали -> менюто
-        window.location.href = (user.role === "kitchen") ? "admin.html" : "index.html";
-      } catch (err) {
-        // Сървърът върна грешка, напр. "Грешно потребителско име или парола"
-        document.getElementById("error").textContent = err.message;
-      }
-    });
-  </script>
+            try {
+                const user = await login(              // функцията е в api.js
+                    document.getElementById("username").value,
+                    document.getElementById("password").value
+                );
+
+                // Пренасочваме според ролята:
+                // кухнята -> админ панела, всички останали -> менюто
+                window.location.href = (user.role === "kitchen") ? "admin.html" : "index.html";
+            } catch (err) {
+                // Сървърът връща грешката на български (идва директно от бекенда)
+                document.getElementById("error").textContent = err.message;
+            }
+        });
+    </script>
 </body>
 </html>
