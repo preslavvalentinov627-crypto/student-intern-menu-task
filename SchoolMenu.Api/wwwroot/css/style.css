@@ -1,150 +1,625 @@
-/* ============================================================
-   style.css - общите стилове за всички страници.
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
-   Цветовете са "CSS променливи" - промени ги тук и цялото
-   приложение се пребоядисва. (Бонус задача: тъмен режим =
-   втори набор от тези променливи!)
+/* ============================================================
+   ДИЗАЙН ТОКЕНИ
+   Тема: "бележка от кухнята" — топла хартиена картичка
+   на тъмно бутилково зелено фоново платно.
    ============================================================ */
 :root {
-  --bg: #f4f6f8;            /* фон на страницата */
-  --card: #ffffff;          /* фон на картите/панелите */
-  --text: #1f2933;          /* основен текст */
-  --muted: #6b7280;         /* по-блед текст */
-  --primary: #2563eb;       /* основен цвят (бутони, header) */
-  --primary-dark: #1e40af;  /* при hover */
-  --danger: #dc2626;        /* грешки */
-  --radius: 12px;           /* заобляне на ъглите */
+  --pine:      #1F2B24;   /* фон на страницата */
+  --pine-deep: #14201A;
+  --paper:     #FBF3E3;   /* картата с менюто/формите */
+  --paper-2:   #F3E7CC;
+  --mustard:   #E7A93D;   /* основен акцент */
+  --mustard-2: #C98A22;
+  --tomato:    #C1483A;   /* внимание / изход / грешка */
+  --sage:      #7C9A82;   /* второстепенен текст върху pine */
+  --ink:       #1F2B24;
+  --ink-soft:  #4B5A4F;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --radius: 14px;
+  --shadow-card: 0 24px 48px -20px rgba(0,0,0,0.45);
 }
 
-/* Нулиране: браузърите слагат свои отстъпи - махаме ги */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* ---------------- СВЕТЪЛ РЕЖИМ ----------------
+   Същата "кухненска бележка" идентичност, само обърнати
+   роли: топла хартия навсякъде, зеленото става акцент. */
+:root[data-theme="light"] {
+  --pine:      #F6EFDD;
+  --pine-deep: #EDE0C4;
+  --paper:     #FFFFFF;
+  --paper-2:   #F3E7CC;
+  --mustard:   #D9922C;
+  --mustard-2: #B87A1E;
+  --tomato:    #B03A2E;
+  --sage:      #5C6E62;
+  --ink:       #1F2B24;
+  --ink-soft:  #4B5A4F;
+  --shadow-card: 0 20px 40px -22px rgba(31,43,36,0.25);
+}
+
+:root[data-theme="light"] body { color: var(--ink); }
+:root[data-theme="light"] header h1 { color: var(--ink); }
+:root[data-theme="light"] header { border-bottom-color: rgba(31,43,36,0.12); }
+:root[data-theme="light"] .day-nav button { color: var(--ink); border-color: rgba(31,43,36,0.2); }
+:root[data-theme="light"] .day-nav button:hover { background: rgba(31,43,36,0.06); }
+:root[data-theme="light"] #menu-date { color: var(--ink-soft); }
+:root[data-theme="light"] .menu-card::after {
+  background: radial-gradient(circle at 10px 0, transparent 10px, var(--paper) 10.5px) repeat-x;
+}
+
+/* ---------------- ПРЕВКЛЮЧВАТЕЛИ (език / тема) ---------------- */
+.toggles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggle-btn {
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid rgba(251,243,227,0.3);
+  border-radius: 999px;
+  width: auto;
+  min-width: 2.4rem;
+  height: 2.4rem;
+  padding: 0 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+.toggle-btn:hover { background: rgba(251,243,227,0.12); transform: translateY(-1px); }
+
+:root[data-theme="light"] .toggle-btn { color: var(--ink); border-color: rgba(31,43,36,0.2); }
+:root[data-theme="light"] .toggle-btn:hover { background: rgba(31,43,36,0.06); }
+
+.login-box .toggles { justify-content: center; margin-bottom: 1.2rem; }
+.login-box .toggle-btn { color: var(--ink); border-color: rgba(31,43,36,0.2); }
+.login-box .toggle-btn:hover { background: rgba(31,43,36,0.06); }
+
+* { box-sizing: border-box; }
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% -10%, rgba(231,169,61,0.10), transparent 45%),
+    var(--pine);
+  background-attachment: fixed;
+  font-family: var(--font-body);
+  color: var(--paper);
+  line-height: 1.5;
 }
 
-/* ---------------- Header (горна лента) ---------------- */
+/* subtle grain/texture so the green isn't flat */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+  z-index: 0;
+}
+
+main, header { position: relative; z-index: 1; }
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  margin: 0 0 0.4em;
+}
+
+a { color: var(--mustard); }
+
+/* ---------------- HEADER ---------------- */
 header {
-  background: var(--primary);
-  color: white;
-  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.6rem 2rem;
+  border-bottom: 1px solid rgba(251,243,227,0.12);
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+header a {
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  border: 1px solid var(--mustard);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+header a:hover { background: var(--mustard); color: var(--pine-deep); }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--sage);
+}
+
+/* ---------------- MAIN LAYOUT ---------------- */
+main {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 5rem;
+}
+
+/* ---------------- BUTTONS ---------------- */
+button {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 10px;
+  padding: 0.7rem 1.3rem;
+  cursor: pointer;
+  background: var(--mustard);
+  color: var(--pine-deep);
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+button:hover { background: var(--mustard-2); transform: translateY(-1px); }
+button:active { transform: translateY(0); }
+
+#btn-logout {
+  background: transparent;
+  color: var(--tomato);
+  border: 1px solid var(--tomato);
+}
+#btn-logout:hover { background: var(--tomato); color: var(--paper); }
+
+/* ---------------- STUDENT MENU: "ORDER TICKET" ----------------
+   Signature element: обект във вид на кухненска бележка/чек,
+   с назъбен ("perforated") долен ръб и пунктирни разделители,
+   типични за истинска бланка от кухня. */
+
+#menu-date {
+  font-size: 1.05rem;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--sage);
+  text-align: center;
+  margin-bottom: 1.6rem;
+  text-transform: capitalize;
+}
+
+.day-nav {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 2rem;
+}
+.day-nav button {
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid rgba(251,243,227,0.25);
+}
+.day-nav button:hover { background: rgba(251,243,227,0.1); }
+#btn-today { background: var(--mustard); color: var(--pine-deep); border-color: var(--mustard); }
+#btn-today:hover { background: var(--mustard-2); }
+
+#menu-container { display: flex; justify-content: center; }
+
+.menu-card {
+  position: relative;
+  background: var(--paper);
+  color: var(--ink);
+  width: 100%;
+  max-width: 420px;
+  padding: 2rem 1.8rem 1.6rem;
+  border-radius: 4px;
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-mono);
+}
+
+.menu-card::before {
+  content: "МЕНЮ ЗА ДЕНЯ";
+  display: block;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 0.95rem;
+  text-align: center;
+  color: var(--ink-soft);
+  border-bottom: 1px dashed var(--ink-soft);
+  padding-bottom: 0.9rem;
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.08em;
+}
+
+/* назъбен ръб долу, като истинска бележка */
+.menu-card::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -10px;
+  height: 20px;
+  background:
+    radial-gradient(circle at 10px 0, transparent 10px, var(--paper) 10.5px) repeat-x;
+  background-size: 20px 20px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px dashed rgba(31,43,36,0.18);
+}
+.menu-item:last-of-type { border-bottom: none; }
+
+.menu-item .emoji {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.menu-item small {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.15rem;
+}
+
+.menu-item strong {
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  font-weight: 600;
+  display: block;
+}
+
+.menu-item em {
+  display: block;
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--tomato);
+  margin-top: 0.2rem;
+}
+
+.notes {
+  margin: 1.2rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px dashed rgba(31,43,36,0.18);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.alert {
+  background: var(--paper);
+  color: var(--ink-soft);
+  padding: 1.6rem;
+  border-radius: var(--radius);
+  text-align: center;
+  font-style: italic;
+  font-family: var(--font-display);
+  max-width: 420px;
+  box-shadow: var(--shadow-card);
+}
+
+/* ---------------- PANELS (admin) ---------------- */
+.panel {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--radius);
+  padding: 1.8rem;
+  margin-bottom: 1.8rem;
+  box-shadow: var(--shadow-card);
+}
+
+.panel h2 {
+  font-size: 1.25rem;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.panel h2::before {
+  content: "";
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--mustard);
+  display: inline-block;
+}
+
+#items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+#items-list li {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;          /* на тесен екран се пренарежда */
-  gap: 8px;
+  padding: 0.6rem 0.9rem;
+  background: var(--paper-2);
+  border-radius: 8px;
+  font-size: 0.95rem;
 }
-header h1 { font-size: 1.25rem; }
-header a { color: white; }
-.header-right { display: flex; align-items: center; gap: 12px; }
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  background: rgba(31,43,36,0.06);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
 
-/* main е центриран и не по-широк от 640px -> чете се добре
-   и на телефон, и на голям монитор (responsive) */
-main { max-width: 640px; margin: 24px auto; padding: 0 16px; }
+.panel h3 {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 1.4rem;
+}
 
-h2 { margin-bottom: 12px; }
-h3 { margin-top: 16px; }
+/* ---------------- FORMS ---------------- */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
 
-/* ---------------- Карта с менюто (index.html) ---------------- */
-.menu-card {
-  background: var(--card);
+label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: -0.4rem;
+}
+
+input, select {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  padding: 0.75rem 0.9rem;
+  border: 1.5px solid rgba(31,43,36,0.15);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+input:focus, select:focus {
+  border-color: var(--mustard-2);
+}
+
+form button[type="submit"] {
+  margin-top: 0.4rem;
+  align-self: flex-start;
+}
+
+/* ---------------- LOGIN ---------------- */
+.login-box {
+  max-width: 380px;
+  margin: 4rem auto 0;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 2.2rem;
   border-radius: var(--radius);
-  padding: 8px 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-card);
+  text-align: center;
 }
-.menu-item {
+.login-box h1 { color: var(--ink); font-size: 1.6rem; }
+.login-box .hint {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  background: var(--paper-2);
+  padding: 0.6rem;
+  border-radius: 8px;
+  margin-bottom: 1.2rem;
+}
+.login-box form { text-align: left; margin-bottom: 1.2rem; }
+.login-box .error {
+  color: var(--tomato);
+  font-size: 0.85rem;
+  min-height: 1.2em;
+}
+.login-box a {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+/* ---------------- MISC ---------------- */
+@media (max-width: 520px) {
+  header { padding: 1.2rem; flex-wrap: wrap; gap: 0.8rem; }
+  main { padding: 1.6rem 1rem 4rem; }
+}
+
+/* ============================================================
+   АЛЕРГЕНЕН ФИЛТЪР (index.html)
+   ============================================================ */
+.allergen-filter-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 1.4rem;
+  overflow: hidden;
+}
+
+.allergen-filter-panel summary {
+  padding: 0.85rem 1.2rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  user-select: none;
+  list-style: none;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 0;
-  border-bottom: 1px solid #eef0f2;
+  gap: 0.5rem;
 }
-.menu-item:last-of-type { border-bottom: none; }
-.menu-item .emoji { font-size: 1.8rem; }
-.menu-item small {
-  display: block;
-  color: var(--muted);
-  text-transform: uppercase;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
+.allergen-filter-panel summary::-webkit-details-marker { display: none; }
+.allergen-filter-panel summary::after {
+  content: "▾";
+  margin-left: auto;
+  font-size: 0.8rem;
+  opacity: 0.6;
+  transition: transform 0.2s;
 }
-.menu-item strong { font-size: 1.05rem; }
-.menu-item em { display: block; color: var(--muted); font-size: 0.8rem; font-style: normal; }
+.allergen-filter-panel[open] summary::after { transform: rotate(180deg); }
 
-.notes {
-  background: #eff6ff;
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin: 10px 0 14px;
+.allergen-hint {
+  font-size: 0.82rem;
+  opacity: 0.7;
+  margin: 0 1.2rem 0.8rem;
+}
+
+.allergen-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0 1.2rem 1rem;
+}
+.allergen-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+  background: var(--surface2, rgba(255,255,255,0.05));
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  transition: background 0.15s, border-color 0.15s;
+}
+.allergen-checkboxes label:has(input:checked) {
+  background: rgba(255, 80, 80, 0.15);
+  border-color: var(--tomato);
+  color: var(--tomato);
+}
+.allergen-checkboxes input[type="checkbox"] { accent-color: var(--tomato); }
+
+/* Скрито ястие заради алерген */
+.menu-item--hidden {
+  opacity: 0.45;
+  text-decoration: line-through;
+  filter: grayscale(1);
+}
+.allergen-warning { color: var(--tomato) !important; }
+.allergen-all-warning {
+  text-align: center;
+  color: var(--tomato);
+  font-weight: 600;
+  margin-top: 0.6rem;
   font-size: 0.9rem;
 }
 
-/* Съобщение "менюто не е публикувано" */
-.alert {
-  background: #fef3c7;
-  border-radius: var(--radius);
-  padding: 16px;
+/* ============================================================
+   ИЗТРИВАНЕ НА ЯСТИЕ (admin.html)
+   ============================================================ */
+#items-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+#items-list li span { flex: 1; }
+
+.allergen-tag {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-left: 0.4rem;
 }
 
-/* ---------------- Форми ---------------- */
-form { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
-input, select, textarea {
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font: inherit;
-  background: white;
+.btn-delete-item {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0.25rem 0.45rem;
+  font-size: 1rem;
+  line-height: 1;
+  transition: background 0.15s, border-color 0.15s;
+  color: inherit;
+  flex-shrink: 0;
 }
-button {
-  padding: 10px 16px;
+.btn-delete-item:hover {
+  background: rgba(255, 80, 80, 0.15);
+  border-color: var(--tomato);
+}
+
+/* Modal overlay */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+}
+.modal-overlay.modal--visible {
+  display: flex;
+}
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem 2.2rem;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  text-align: center;
+}
+.modal-box p {
+  font-size: 1rem;
+  margin-bottom: 1.4rem;
+  line-height: 1.5;
+}
+.modal-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: center;
+}
+.btn-danger {
+  background: var(--tomato);
+  color: #fff;
   border: none;
   border-radius: 8px;
-  background: var(--primary);
-  color: white;
-  font: inherit;
+  padding: 0.6rem 1.4rem;
+  font-size: 0.92rem;
   cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.15s;
 }
-button:hover { background: var(--primary-dark); }
-
-/* ---------------- Админ панел ---------------- */
-.panel {
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+.btn-danger:hover { opacity: 0.85; }
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 1.4rem;
+  font-size: 0.92rem;
+  cursor: pointer;
+  color: inherit;
+  transition: background 0.15s;
 }
-.panel ul { list-style: none; }
-.panel li {
-  padding: 8px 0;
-  border-bottom: 1px solid #eef0f2;
-  display: flex;
-  justify-content: space-between;
-}
-.tag { color: var(--muted); font-size: 0.85rem; }
+.btn-secondary:hover { background: var(--surface2, rgba(255,255,255,0.08)); }
 
-/* Секцията-задача е с пунктирана рамка, за да се набива на очи */
-.todo-box { border: 2px dashed var(--primary); }
-.todo-box p { margin-bottom: 8px; }
-
-#btn-logout { background: rgba(255, 255, 255, 0.18); }
-
-/* ---------------- Login страница ---------------- */
-.login-box {
-  max-width: 360px;
-  margin-top: 10vh;
-  background: var(--card);
-  padding: 28px;
-  border-radius: var(--radius);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-.login-box h1 { margin-bottom: 8px; }
-.login-box a { display: inline-block; margin-top: 14px; }
-.hint { color: var(--muted); font-size: 0.85rem; margin-bottom: 10px; }
-.error { color: var(--danger); min-height: 1.2em; font-size: 0.9rem; }
-
-/* ---------------- Навигация по дни (ЗАДАЧА 2) ---------------- */
-.day-nav { display: flex; gap: 8px; margin-bottom: 16px; }
-.day-nav button { flex: 1; }
+    
